@@ -1,17 +1,12 @@
+require('dotenv').config();
 const express = require("express");
 const path = require("path");
 const PORT = process.env.PORT || 3001;
 const app = express();
 var logger = require("morgan");
 var mongoose = require("mongoose");
+// const Mongod = require('mongod');
 
-// Our scraping tools
-// Axios is a promised-based http library, similar to jQuery's Ajax method
-// It works on the client and on the server
-var axios = require("axios");
-var cheerio = require("cheerio");
-// Use morgan logger for logging requests
-app.use(logger("dev"));
 // Define middleware here
 app.use(express.urlencoded({
   extended: true
@@ -21,11 +16,43 @@ app.use(express.json());
 if (process.env.NODE_ENV === "production") {
   app.use(express.static("client/build"));
 }
-// Connect to the Mongo DB
-mongoose.connect("mongodb://localhost/googlebooks", {
-  useNewUrlParser: true
-});
-// Define API routes here
+
+const mongoose = require("mongoose");
+const mongoURL = process.env.PROD_MONGODB || "mongodb://localhost:27017/googlebooks"
+mongoose.connect(mongoURL, {
+    useNewUrlParser: true
+  })
+  .then(() => {
+    console.log("🗄 ==> Successfully connected to mongoDB.");
+  })
+  .catch((err) => {
+    console.log(`Error connecting to mongoDB: ${err}`);
+  });
+
+require("./routes/api-routes")(app);
+
+app.listen(PORT, () => {
+  console.log(`🌎 ==> API server now on port ${PORT}!`);
+})
+
+// var axios = require("axios");
+// var cheerio = require("cheerio");
+// // Use morgan logger for logging requests
+// app.use(logger("dev"));
+// // Define middleware here
+// app.use(express.urlencoded({
+//   extended: true
+// }));
+// app.use(express.json());
+// // Serve up static assets (usually on heroku)
+// if (process.env.NODE_ENV === "production") {
+//   app.use(express.static("client/build"));
+// }
+// // Connect to the Mongo DB
+// mongoose.connect("mongodb://localhost/googlebooks", {
+//   useNewUrlParser: true
+// });
+// // Define API routes here
 // // A GET route for scraping the website
 // app.get("/scrape", function (req, res) {
 //   // First, we grab the body of the html with axios
@@ -62,60 +89,3 @@ mongoose.connect("mongodb://localhost/googlebooks", {
 //     res.send("Scrape Complete");
 //   });
 // });
-
-
-// Route for getting all Articles from the db
-app.get("/books", function (req, res) {
-  // Grab every document in the Articles collection
-  db.Book.find({})
-    .then(function (dbBook) {
-      // If we were able to successfully find books, send them back to the client
-      res.json(dbBook);
-    })
-    .catch(function (err) {
-      // If an error occurred, send it to the client
-      res.json(err);
-    });
-});
-
-
-// Route for deleting a Book
-app.post("/books/:id", function (req, res) {
-  db.Book.findOneAndDelete({
-    _id: req.params.id
-  }, {
-    note: dbNote._id
-  }, {
-    new: true
-  });
-})
-
-
-// Route for grabbing a specific Books by id, populate it with it's note
-app.get("/books/:id", function (req, res) {
-  // Using the id passed in the id parameter, prepare a query that finds the matching one in our db...
-  db.Book.findOne({
-      _id: req.params.id
-    })
-    // ..and populate all of the notes associated with it
-    .populate("note")
-    .then(function (dbBook) {
-      // If we were able to successfully find an Article with the given id, send it back to the client
-      res.json(dbBook);
-    })
-    .catch(function (err) {
-      // If an error occurred, send it to the client
-      res.json(err);
-    });
-});
-
-
-// Send every other request to the React app
-// Define any API routes before this runs
-app.get("*", (req, res) => {
-  res.sendFile(path.join(__dirname, "./client/build/index.html"));
-});
-
-app.listen(PORT, () => {
-  console.log(`🌎 ==> API server now on port ${PORT}!`);
-});
