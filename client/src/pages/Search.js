@@ -14,7 +14,7 @@ import {
     Visibility,
     Card
   } from "semantic-ui-react";
-  import SearchInput from './components/'
+  import SearchInput from './components/SearchInput'
 
   const HomepageHeading = ({ mobile }) => (
     <Container text>
